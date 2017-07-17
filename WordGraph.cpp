@@ -51,7 +51,38 @@ int WordGraph::importGraph(string g){         //all the ways g can be deformed:
                                               //number of collumns and rows not equal
                                               //invalid characters
   int graphSize = -1;
+  int rowCounter = 0;
+  int collumnCounter = 0;
+  if(g[0]==';' || g[0]==':' || g[g.size()-1]==';' || g[g.size()-1]==':') return 1;
   for(int i=0; i<g.size(); i++){
-    if(graphSize==-1 && g[i]==';') graphSize=(i+1)/2
+    if(g[i]<'0' || g[i]>';') return 2;        //invalid tokens
+    else if(g[i]==';'){
+      if(graphSize==-1) graphSize = rowCounter+1;  //setting graph size based on the number of rows in first collumn
+      if(rowCounter<graphSize-1) return 1;    //at least one row is too small
+      rowCounter = 0;
+      collumnCounter++;
+    }
+    else if(g[i]==':'){
+      rowCounter++;
+      if(graphSize!=-1 && rowCounter>graphSize-1) return 1; //at least one row is too big
+    }
   }
+  if(graphSize == -1) return 1;               //malformed input
+  if(collumnCounter != graphSize-1) return 1; //there should be an equal number of collumns and rows
+
+  graph.clear();
+  int gin = 0;
+  int glen = 1;
+  vector<int> temp;
+  for(int i=0; i<graphSize; i++){
+    for(int j=0; j<graphSize; j++){
+      while(g[gin+glen] < ':') glen++;
+      temp.push_back(atoi((g.substr(gin, glen)).c_str()));
+      gin += glen+2;
+      glen = 1;
+    }
+    graph.push_back(temp);
+    temp.clear();
+  }
+  return 0;
 }
