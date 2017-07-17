@@ -69,20 +69,63 @@ int WordGraph::importGraph(string g){         //all the ways g can be deformed:
   }
   if(graphSize == -1) return 1;               //malformed input
   if(collumnCounter != graphSize-1) return 1; //there should be an equal number of collumns and rows
-
-  graph.clear();
-  int gin = 0;
-  int glen = 1;
-  vector<int> temp;
-  for(int i=0; i<graphSize; i++){
-    for(int j=0; j<graphSize; j++){
-      while(g[gin+glen] < ':') glen++;
-      temp.push_back(atoi((g.substr(gin, glen)).c_str()));
-      gin += glen+2;
-      glen = 1;
+                                              //now that we have completed the input data validation, we can move on to the actual algorithm
+  graph.clear();                              //clear the old graph to make room for the new one
+  int gin = 0;                                //the current index of our manual traversal
+  int glen = 1;                               //the number of digits in the urrent number in our traversal
+  vector<int> temp;                           //temporary vector to build our collumns/rows
+  for(int i=0; i<graphSize; i++){             //collumn traversal
+    for(int j=0; j<graphSize; j++){           //row traversal
+      while(gin+glen<g.size() && g[gin+glen]<':'){
+        glen++;                               //as long as the next token isn't a delim, keep adding to the length
+      }
+      temp.push_back(atoi((g.substr(gin, glen)).c_str()));  //we are turning a string into a substring into a c-string into an int
+      gin += glen+1;                          //add the length to the current index plus one to hop onto the first digit of the next number
+      glen = 1;                               //reset the length for the next loop iteration
     }
-    graph.push_back(temp);
-    temp.clear();
+    graph.push_back(temp);                    //add temp to the graph (it is a new collumn)
+    temp.clear();                             //clear out temp for the new loop traversal
   }
-  return 0;
+  return 0;                                   //finally we return a success (hopefully)
+}
+
+string WordGraph::exportGraph(){
+  string out = "";                            //start with an empty string
+  for(int i=0; i<graph.size(); i++){          //traverse collumns
+    for(int j=0; j<graph[i].size(); j++){     //traverse rows
+      out += to_string(graph[i][j]);          //add number to the output after converting to string
+      if(j+1<graph[i].size()){                //if this isn't the last number in the collumn
+        out += ':';                           //add in a colon as delim
+      }
+    }
+    if(i+1<graph.size()){                     //if this isn't the last collumn in the graph
+      out += ';';                             //add semicolon as delim
+    }
+  }
+  return out;                                 //return that whole string
+}
+
+int WordGraph::importDictionary(string d){
+  if(d[0]==' ' || d[d.size()-1]==' ') return 1; //can't have a delim at the start or end
+  dictionary.clear();                         //clear out the dictionary so that we don't append
+  int din = 0;                                //same concept as in import graph...
+  int dlen = 1;
+  while(din < d.size()){
+    while(din+dlen<d.size() && d[din+dlen]!=' '){
+      dlen++;                                 //add to length as long as it's not a delim (making sure not to go out of bounds)
+    }
+    dictionary.push_back(d.substr(din,dlen)); //push the substring to the end of dictionary
+    din += dlen+1;
+    dlen = 1;
+  }
+  return 0;                                   //return success
+}
+
+string WordGraph::exportDictionary(){
+  string out = "";                            //start with an empty string
+  for(int i=0; i<dictionary.size(); i++){     //traverse the dictionary
+    out += dictionary[i];                     //add current word to output string
+    if(i+1<dictionary.size()) out+=' ';       //for all except last word, add space as delim after
+  }
+  return out;                                 //return our output string
 }
