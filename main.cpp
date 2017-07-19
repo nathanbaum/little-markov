@@ -1,18 +1,24 @@
 #include <fstream>
 #include "WordGraph.hpp"
 
+vector<string> fileWords;
+
 string generateChain(WordGraph wg, int n, string start, string end){            //wg is an initialized WordGraph -- n is the desired length of the chain, if n==-1 it will go until end state
   string out = "";                                                              //if n!=0 end will be ignored
-  wg.setCurrent(start);
+  if(wg.setCurrent(start) == -1){
+    return "Chain could not be generated because start word is not found in the training data.";
+  }
   if(n == -1){
+    srand(time(NULL));                                                          //generate the seed for the random generator
     while(wg.getCurrent().compare(end) != 0){
       wg.updateCurrent();
       out += wg.getCurrent() + " ";
     }
   }
   else{
+    srand(time(NULL));                                                          //generate the seed for the random generator
     for(int i=0; i<n; i++){
-      wg.updateCurrent();
+      if(wg.updateCurrent()==1) return out;
       out += wg.getCurrent() + " ";
     }
   }
@@ -27,6 +33,7 @@ WordGraph addAll(WordGraph wg, string d){
       dlen++;                                                                   //add to length as long as it's not a delim (making sure not to go out of bounds)
     }
     wg.add(d.substr(din,dlen));                                                 //add word to dictionary
+    fileWords.push_back(d.substr(din,dlen));
     if(d[din+dlen]==' '){
       din += dlen+1;
     }
@@ -38,26 +45,19 @@ WordGraph addAll(WordGraph wg, string d){
   return wg;
 }
 
-WordGraph linkAll(WordGraph wg, string d){
-  vector<string> pair;
-  int din = 0;                                                                  //same concept as in import graph...
-  int dlen = 1;
-  while(din < d.size()){
-    while(din+dlen<d.size() && d[din+dlen]!=' ' && d[din+dlen]!='.'){
-      dlen++;                                                                   //add to length as long as it's not a delim (making sure not to go out of bounds)
+WordGraph linkAll(WordGraph wg){
+  cout << "Linking words..." << endl;
+  cout << "Links to make: " << fileWords.size() << endl;
+  for(int i=1; i<fileWords.size(); i++){
+    wg.link(fileWords[i-1], fileWords[i]);
+    cout << "\r[";
+    for(int j=0; j<int (double (i)/double (fileWords.size()-1) * 100); j++){
+      cout << "|";
     }
-    pair.insert(pair.begin(), d.substr(din,dlen));                              //push the substring to the begining of pair
-    if(pair.size() == 2){                                                       //when you get to two
-      wg.link(pair[1], pair[0]);                                                //now link the first word to the second word
-      pair.pop_back();                                                          //pop off the last (actually first) word
+    for(int j=0; j< 100 - int (double (i)/double (fileWords.size()-1) * 100); j++){
+      cout << " ";
     }
-    if(d[din+dlen]==' '){
-      din += dlen+1;
-    }
-    else{
-      din += dlen;
-    }
-    dlen = 1;
+    cout << "]" << int (double (i)/double (fileWords.size()-1) * 100)<< "%";
   }
   return wg;
 }
@@ -92,7 +92,6 @@ int main(int argc, char *argv[]){
     file.close();
     file.open(argv[1], ifstream::in);
     cout << "Populating dictionary..." << endl;
-    int percentComplete = 0;
     int curLine = 0;
     while(true){
       try{
@@ -102,62 +101,37 @@ int main(int argc, char *argv[]){
         break;
       }
       curLine++;
-      if(int (double (curLine)/double (lineTotal) * 100) != percentComplete){
-        cout << "\r[";
-        for(int i=0; i<int (double (curLine)/double (lineTotal) * 100); i++){
-          cout << "|";
-        }
-        for(int i=0; i< 100 - int (double (curLine)/double (lineTotal) * 100); i++){
-          cout << " ";
-        }
-        cout << "]" << int (double (curLine)/double (lineTotal) * 100)<< "%";
-        percentComplete = int (double (curLine)/double (lineTotal) * 100);
+      cout << "\r[";
+      for(int i=0; i<int (double (curLine)/double (lineTotal) * 100); i++){
+        cout << "|";
       }
+      for(int i=0; i< 100 - int (double (curLine)/double (lineTotal) * 100); i++){
+        cout << " ";
+      }
+      cout << "]" << int (double (curLine)/double (lineTotal) * 100)<< "%";
       myGraph = addAll(myGraph, line);
     }
     file.close();
     myGraph.buildGraph();
-    file.open(argv[1], ifstream::in);
-    cout << "Linking words..." << endl;
-    percentComplete = 0;
-    curLine = 0;
-    while(true){
-      try{
-        getline(file, line);
-      }
-      catch(const exception& e){
-        break;
-      }
-      curLine++;
-      if(int (double (curLine)/double (lineTotal) * 100) != percentComplete){
-        cout << "\r[";
-        for(int i=0; i<int (double (curLine)/double (lineTotal) * 100); i++){
-          cout << "|";
-        }
-        for(int i=0; i< 100 - int (double (curLine)/double (lineTotal) * 100); i++){
-          cout << " ";
-        }
-        cout << "]" << int (double (curLine)/double (lineTotal) * 100)<< "%";
-        percentComplete = int (double (curLine)/double (lineTotal) * 100);
-      }
-      myGraph = linkAll(myGraph, line);
-    }
-    file.close();
+    cout << endl;
+    myGraph = linkAll(myGraph);
     cout << endl;
     //cout << "Exported Dictionary:\n" << myGraph.exportDictionary() << endl;
     //cout << "Exported Graph:\n" << myGraph.exportGraph() << endl;
 
     cout << "This is what I think you sound like:\n" << generateChain(myGraph, 200, ".", "") << endl;
 
-    ofstream dictionaryExport, graphExport;
+    //ofstream dictionaryExport, graphExport;
 
-    dictionaryExport.open ("dictionary.txt");
-    dictionaryExport << myGraph.exportDictionary();
-    dictionaryExport.close();
+    //cout << "Exporting dictionary to dictionary.txt..." << endl;
+    //dictionaryExport.open ("dictionary.txt");
+    //dictionaryExport << myGraph.exportDictionary();
+    //dictionaryExport.close();
 
-    graphExport.open ("graph.txt");
-    graphExport << myGraph.exportGraph();
-    graphExport.close();
+    //cout << "Exporting graph to graph.txt" << endl;
+    //graphExport.open ("graph.txt");
+    //graphExport << myGraph.exportGraph();
+    //graphExport.close();
     return 0;
   }
   else{

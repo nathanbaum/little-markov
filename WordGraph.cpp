@@ -161,23 +161,13 @@ string WordGraph::getCurrent(){                                                 
 int WordGraph::setCurrent(string s){
   int index = search(s);                                                        //search for s
   if(dictionary[index].compare(s)!=0){                                          //if it's not there
-    add(s, index);                                                              //add it to the dictionary
-    vector <int> w;                                                             //make a new temporary vector for that word's collumn
-    for(int i=0; i<dictionary.size(); i++){                                     //and fill it with zeros
-      w.push_back(0);
-    }
-    for(int i=0; i<dictionary.size(); i++){
-      auto graphiit = graph[i].begin();
-      graph[i].insert(graphiit+index, 0);                                             //insert zeros in all the right places
-    }
-    auto graphit = graph.begin();
-    graph.insert(graphit+index,w);                                                   //now add that collumn to the graph in the right place
+    return -1;
   }                                                                             //if it is there
   current = index;                                                              //set current to its index
   return 0;                                                                     //return success
 }
 
-int WordGraph::updateCurrent(){
+int WordGraph::updateCurrent(){                                                 //MAKE SURE TO SEED THE RANDOM NUMBER GEN BEFORE RUNNING!
   vector<int> chooseNext;
   for(int i=0; i<graph[current].size(); i++){                                   //traverse the column in the graph
     for(int j=0; j<graph[current][i]; j++){                                     //for the number of links at graph[current][i]
@@ -185,7 +175,7 @@ int WordGraph::updateCurrent(){
     }                                                                           //now we have a vector of size graph[current][0]+graph[current][1]+...
   }                                                                             //where the elements are indexes to possible next currents
   if(chooseNext.size() == 0) return 1;                                          //if there is nowhere to go, return with an error
-  srand(time(NULL));                                                            //generate the seed for the random generator
+  //cout << "random number: " << rand() % chooseNext.size() << endl;
   current = chooseNext[rand() % chooseNext.size()];                             //set current to the index from our random number landing somewhere in our new vector
   return 0;                                                                     //return success
 }
