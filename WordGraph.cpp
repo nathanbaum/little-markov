@@ -1,15 +1,21 @@
 #include "WordGraph.hpp"
 
 int WordGraph::add(string word){
+  //cout << "\nDictionary: " << exportDictionary() << std::endl;
+  //cout << "searching for \"" << word << "\"" << endl;
   int index = search(word);
+  //cout << "search result: " << index << endl;
   if(index==-1){                                                                //if the dictionary is empty, we don't want to make any weird refs
+    //cout << "dictionary empty" << endl;
     dictionary.push_back(word);
     return 0;
   }
-  if(dictionary[index].compare(word) == 0){                                     //if a search for the word comes up with a match
+  if(index!=dictionary.size() && dictionary[index].compare(word) == 0){                                     //if a search for the word comes up with a match
+    //cout << "word already exists" << endl;
     return 1;                                                                   //return 1, indicating failure
   }                                                                             //if the search found nothing
   auto it = dictionary.begin();
+  //cout << "word does not yet exist - adding" << endl;
   dictionary.insert(it+index, word);                                            //add the word to the dictionary
   return 0;                                                                     //return 0 indicating success
 }
@@ -31,22 +37,27 @@ int WordGraph::search(string word){                                             
   return search(word, 0, dictionary.size()-1);                                  //it is up to you to check which it is
 }
 
-int WordGraph::search(string word, int lo, int hi){
+int WordGraph::search(string word, int lo, int hi){                             //FIGURE THIS SHIT OUT!!! BECAUSE IT DOESN'T WORK, OH AT ALL
   int mid = ((hi-lo)/2)+lo;
-  //cout << "Search: " << lo << "-" << hi << " mid=" << mid << endl;
+  //cout << "Search: lo=" << lo << " hi=" << hi << " mid=" << mid << endl;
   if(hi<lo){
     return -1;
   }
-  else if(dictionary[mid].compare(word)==0){
+  int comp = word.compare(dictionary[mid]);
+  if(comp==0){
     return mid;
   }
-  else if(lo==hi){
-    return hi;
+  if(hi == lo+1 && comp<0){
+    return lo;
   }
-  else if(dictionary[mid].compare(word)<0){
+  if(lo==hi){
+    if(comp<0) return hi;
+    if(comp>0) return hi+1;
+  }
+  if(comp<0){
     return search(word, lo, mid-1);
   }
-  else if(dictionary[mid].compare(word)>0){
+  if(comp>0){
     return search(word, mid+1, hi);
   }
   return -1;                                                                    //there's, like, no way for it to get here, but whatever
@@ -65,8 +76,12 @@ int WordGraph::buildGraph(){
 int WordGraph::link(string w1, string w2){
   int iw1=search(w1);                                                           //iw1 stands for index of word 1
   int iw2=search(w2);                                                           //I think you can guess what iw2 stands for
-  if(dictionary[iw1].compare(w1)!=0 || dictionary[iw2].compare(w2)!=0) return 1;//if iw doesn't match index, w wasn't found and link failure                                                      //if iw was never overwritten, w wasn't found and link failure
+  //cout << "iw1=" << iw1 << endl;
+  //cout << "iw2=" << iw2 << endl;
+  if(dictionary[iw1].compare(w1)!=0 || dictionary[iw2].compare(w2)!=0) return 1;//if iw doesn't match index, w wasn't found and link failure
+  //cout << "Before linking: " << graph[iw1][iw2];
   graph[iw1][iw2]++;                                                            //increment that spot on graph by one to link w1 to w2
+  //cout << " After linking: " << graph[iw1][iw2] << endl;
   return 0;
 }
 
@@ -177,5 +192,9 @@ int WordGraph::updateCurrent(){                                                 
   if(chooseNext.size() == 0) return 1;                                          //if there is nowhere to go, return with an error
   //cout << "random number: " << rand() % chooseNext.size() << endl;
   current = chooseNext[rand() % chooseNext.size()];                             //set current to the index from our random number landing somewhere in our new vector
+  //for(int i=0; i<graph[current].size(); i++){
+  //  cout << graph[current][i] << " ";
+  //}
+  //cout << endl;
   return 0;                                                                     //return success
 }

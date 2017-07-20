@@ -29,7 +29,7 @@ WordGraph addAll(WordGraph wg, string d){
   int din = 0;                                                                  //same concept as in import graph...
   int dlen = 1;
   while(din < d.size()){
-    while(din+dlen<d.size() && d[din+dlen]!=' ' && d[din+dlen]!='.'){
+    while(din+dlen<d.size() && d[din+dlen]!=' ' /*&& d[din+dlen]!='.'*/){
       dlen++;                                                                   //add to length as long as it's not a delim (making sure not to go out of bounds)
     }
     wg.add(d.substr(din,dlen));                                                 //add word to dictionary
@@ -49,6 +49,7 @@ WordGraph linkAll(WordGraph wg){
   cout << "Linking words..." << endl;
   cout << "Links to make: " << fileWords.size() << endl;
   for(int i=1; i<fileWords.size(); i++){
+    //cout << "Linking \"" << fileWords[i-1] << "\" to \"" << fileWords[i] << endl;
     wg.link(fileWords[i-1], fileWords[i]);
     cout << "\r[";
     for(int j=0; j<int (double (i)/double (fileWords.size()-1) * 100); j++){
@@ -119,7 +120,7 @@ int main(int argc, char *argv[]){
     //cout << "Exported Dictionary:\n" << myGraph.exportDictionary() << endl;
     //cout << "Exported Graph:\n" << myGraph.exportGraph() << endl;
 
-    cout << "This is what I think you sound like:\n" << generateChain(myGraph, 200, ".", "") << endl;
+    cout << "\nThis is what I think you sound like:\n" << generateChain(myGraph, 200, "the", "") << endl;
 
     //ofstream dictionaryExport, graphExport;
 
