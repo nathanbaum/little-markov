@@ -73,6 +73,38 @@ int WordGraph::buildGraph(){
   }
 }
 
+int WordGraph::buildGraphVerbose(){
+  cout << "Building graph..." << endl;
+  int curLine = 0;
+  int lineTotal = dictionary.size()*2;
+  vector <int> w;                                                               //make a new temporary vector for that word's collumn
+  for(int i=0; i<dictionary.size(); i++){                                       //and fill it with zeros
+    w.push_back(0);
+    curLine++;
+    cout << "\r[";
+    for(int i=0; i<int (double (curLine)/double (lineTotal) * 100); i++){
+      cout << "|";
+    }
+    for(int i=0; i< 100 - int (double (curLine)/double (lineTotal) * 100); i++){
+      cout << " ";
+    }
+    cout << "]" << int (double (curLine)/double (lineTotal) * 100)<< "%";
+  }
+  for(int i=0; i<dictionary.size(); i++){
+    graph.push_back(w);                                                         //now add that collumn to the graph
+    curLine++;
+    cout << "\r[";
+    for(int i=0; i<int (double (curLine)/double (lineTotal) * 100); i++){
+      cout << "|";
+    }
+    for(int i=0; i< 100 - int (double (curLine)/double (lineTotal) * 100); i++){
+      cout << " ";
+    }
+    cout << "]" << int (double (curLine)/double (lineTotal) * 100)<< "%";
+  }
+  cout << endl;
+}
+
 int WordGraph::link(string w1, string w2){
   int iw1=search(w1);                                                           //iw1 stands for index of word 1
   int iw2=search(w2);                                                           //I think you can guess what iw2 stands for

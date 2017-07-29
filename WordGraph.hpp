@@ -17,6 +17,7 @@ public:
   int search(string word);                                                      //returns the index in dictionary corresponding to word, or -1 if search was unsuccessful
   int search(string word, int lo, int hi);                                      //overloaded search function, with lower and upper bound for the dictionary search
   int buildGraph();
+  int buildGraphVerbose();
   int link(string w1, string w2);                                               //increments the int at w1,w2 -- returns 0 if successful, 1 if one or both words are not found
   int importGraph(string g);                                                    //imports new graph from string using delimeter colon (:) for rows and semicolon (;) for columns
                                                                                 //example:                        2  4  8
