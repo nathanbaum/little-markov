@@ -8,36 +8,27 @@ int WordGraph::add(string word){
   if(index==-1){                                                                //if the dictionary is empty, we don't want to make any weird refs
     //cout << "dictionary empty" << endl;
     dictionary.push_back(word);
+    vector <int> w;
+    w.push_back(0);
+    graph.push_back(w);
     return 0;
   }
-  if(index!=dictionary.size() && dictionary[index].compare(word) == 0){                                     //if a search for the word comes up with a match
+  if(index!=dictionary.size() && dictionary[index].compare(word) == 0){         //if a search for the word comes up with a match
     //cout << "word already exists" << endl;
     return 1;                                                                   //return 1, indicating failure
   }                                                                             //if the search found nothing
-  auto it = dictionary.begin();
   //cout << "word does not yet exist - adding" << endl;
-  dictionary.insert(it+index, word);                                            //add the word to the dictionary
-  return 0;                                                                     //return 0 indicating success
-}
-
-int WordGraph::add(string word, int index){
-  if(dictionary[index].compare(word) == 0){                                     //if index and word match
-    return 1;                                                                   //return 1, indicating failure
-  }                                                                             //if the search found nothing
-  auto it = dictionary.begin();
-  dictionary.insert(it+index, word);                                            //add the word to the dictionary
+  dictionary.insert(dictionary.begin()+index, word);                            //add the word to the dictionary
+  vector <int> w;                                                               //make a new temporary vector for that word's collumn
+  graph.insert(graph.begin()+index, w);                                         //insert that collumn in the correct index of the graph
   return 0;                                                                     //return 0 indicating success
 }
 
 int WordGraph::search(string word){                                             //returns the index for word in dictionary, or the place where word belongs in dictionary
-  //if(dictionary.size()==0){
-  //  return -1;
-  //}
-  //cout << "dictionary size: " << dictionary.size() << endl;
   return search(word, 0, dictionary.size()-1);                                  //it is up to you to check which it is
 }
 
-int WordGraph::search(string word, int lo, int hi){                             //FIGURE THIS SHIT OUT!!! BECAUSE IT DOESN'T WORK, OH AT ALL
+int WordGraph::search(string word, int lo, int hi){
   int mid = ((hi-lo)/2)+lo;
   //cout << "Search: lo=" << lo << " hi=" << hi << " mid=" << mid << endl;
   if(hi<lo){
@@ -63,48 +54,6 @@ int WordGraph::search(string word, int lo, int hi){                             
   return -1;                                                                    //there's, like, no way for it to get here, but whatever
 }
 
-int WordGraph::buildGraph(){
-  vector <int> w;                                                               //make a new temporary vector for that word's collumn
-  for(int i=0; i<dictionary.size(); i++){                                       //and fill it with zeros
-    w.push_back(0);
-  }
-  for(int i=0; i<dictionary.size(); i++){
-    graph.push_back(w);                                                         //now add that collumn to the graph
-  }
-}
-
-int WordGraph::buildGraphVerbose(){
-  cout << "Building graph..." << endl;
-  int curLine = 0;
-  int lineTotal = dictionary.size()*2;
-  vector <int> w;                                                               //make a new temporary vector for that word's collumn
-  for(int i=0; i<dictionary.size(); i++){                                       //and fill it with zeros
-    w.push_back(0);
-    curLine++;
-    cout << "\r[";
-    for(int i=0; i<int (double (curLine)/double (lineTotal) * 100); i++){
-      cout << "|";
-    }
-    for(int i=0; i< 100 - int (double (curLine)/double (lineTotal) * 100); i++){
-      cout << " ";
-    }
-    cout << "]" << int (double (curLine)/double (lineTotal) * 100)<< "%";
-  }
-  for(int i=0; i<dictionary.size(); i++){
-    graph.push_back(w);                                                         //now add that collumn to the graph
-    curLine++;
-    cout << "\r[";
-    for(int i=0; i<int (double (curLine)/double (lineTotal) * 100); i++){
-      cout << "|";
-    }
-    for(int i=0; i< 100 - int (double (curLine)/double (lineTotal) * 100); i++){
-      cout << " ";
-    }
-    cout << "]" << int (double (curLine)/double (lineTotal) * 100)<< "%";
-  }
-  cout << endl;
-}
-
 int WordGraph::link(string w1, string w2){
   int iw1=search(w1);                                                           //iw1 stands for index of word 1
   int iw2=search(w2);                                                           //I think you can guess what iw2 stands for
@@ -112,7 +61,7 @@ int WordGraph::link(string w1, string w2){
   //cout << "iw2=" << iw2 << endl;
   if(dictionary[iw1].compare(w1)!=0 || dictionary[iw2].compare(w2)!=0) return 1;//if iw doesn't match index, w wasn't found and link failure
   //cout << "Before linking: " << graph[iw1][iw2];
-  graph[iw1][iw2]++;                                                            //increment that spot on graph by one to link w1 to w2
+  graph[iw1].push_back(iw2);                                                    //push the index of one of the links to the back of the collumn
   //cout << " After linking: " << graph[iw1][iw2] << endl;
   return 0;
 }
@@ -121,39 +70,22 @@ int WordGraph::importGraph(string g){                                           
                                                                                 //unequal lengths between semicolons
                                                                                 //number of collumns and rows not equal
                                                                                 //invalid characters
-  int graphSize = -1;
-  int rowCounter = 0;
-  int collumnCounter = 0;
   if(g[0]==';' || g[0]==':' || g[g.size()-1]==';' || g[g.size()-1]==':') return 1;
   for(int i=0; i<g.size(); i++){
     if(g[i]<'0' || g[i]>';') return 2;                                          //invalid tokens
-    else if(g[i]==';'){
-      if(graphSize==-1) graphSize = rowCounter+1;                               //setting graph size based on the number of rows in first collumn
-      if(rowCounter<graphSize-1) return 1;                                      //at least one row is too small
-      rowCounter = 0;
-      collumnCounter++;
-    }
-    else if(g[i]==':'){
-      rowCounter++;
-      if(graphSize!=-1 && rowCounter>graphSize-1) return 1;                     //at least one row is too big
-    }
   }
-  if(graphSize == -1) return 1;                                                 //malformed input
-  if(collumnCounter != graphSize-1) return 1;                                   //there should be an equal number of collumns and rows
                                                                                 //now that we have completed the input data validation, we can move on to the actual algorithm
   graph.clear();                                                                //clear the old graph to make room for the new one
   int gin = 0;                                                                  //the current index of our manual traversal
   int glen = 1;                                                                 //the number of digits in the urrent number in our traversal
   vector<int> temp;                                                             //temporary vector to build our collumns/rows
-  for(int i=0; i<graphSize; i++){                                               //collumn traversal
-    for(int j=0; j<graphSize; j++){                                             //row traversal
-      while(gin+glen<g.size() && g[gin+glen]<':'){
-        glen++;                                                                 //as long as the next token isn't a delim, keep adding to the length
-      }
-      temp.push_back(atoi((g.substr(gin, glen)).c_str()));                      //we are turning a string into a substring into a c-string into an int
-      gin += glen+1;                                                            //add the length to the current index plus one to hop onto the first digit of the next number
-      glen = 1;                                                                 //reset the length for the next loop iteration
+  while(gin<g.size()){
+    while(gin+glen<g.size() && g[gin+glen]<':'){
+      glen++;                                                                   //as long as the next token isn't a delim, keep adding to the length
     }
+    temp.push_back(atoi((g.substr(gin, glen)).c_str()));                        //we are turning a string into a substring into a c-string into an int
+    gin += glen+1;                                                              //add the length to the current index plus one to hop onto the first digit of the next number
+    glen = 1;                                                                   //reset the length for the next loop iteration
     graph.push_back(temp);                                                      //add temp to the graph (it is a new collumn)
     temp.clear();                                                               //clear out temp for the new loop traversal
   }
@@ -182,14 +114,19 @@ int WordGraph::importDictionary(string d){
   int din = 0;                                                                  //same concept as in import graph...
   int dlen = 1;
   while(din < d.size()){
-    while(din+dlen<d.size() && d[din+dlen]!=' '){
+    while(din+dlen<d.size() && d[din+dlen]!=' ' /* && d[din+dlen]!='.' */){
       dlen++;                                                                   //add to length as long as it's not a delim (making sure not to go out of bounds)
     }
-    dictionary.push_back(d.substr(din,dlen));                                   //push the substring to the end of dictionary
-    din += dlen+1;
+    dictionary.add(d.substr(din,dlen));                                   //add word to dictionary
+    if(d[din+dlen]==' '){
+      din += dlen+1;
+    }
+    else{
+      din += dlen;
+    }
     dlen = 1;
   }
-  return 0;                                                                     //return success
+  return 0;
 }
 
 string WordGraph::exportDictionary(){
@@ -215,18 +152,28 @@ int WordGraph::setCurrent(string s){
 }
 
 int WordGraph::updateCurrent(){                                                 //MAKE SURE TO SEED THE RANDOM NUMBER GEN BEFORE RUNNING!
-  vector<int> chooseNext;
-  for(int i=0; i<graph[current].size(); i++){                                   //traverse the column in the graph
-    for(int j=0; j<graph[current][i]; j++){                                     //for the number of links at graph[current][i]
-      chooseNext.push_back(i);                                                  //push the index of that to the end of the vector
-    }                                                                           //now we have a vector of size graph[current][0]+graph[current][1]+...
-  }                                                                             //where the elements are indexes to possible next currents
-  if(chooseNext.size() == 0) return 1;                                          //if there is nowhere to go, return with an error
+  if(graph[current].size() == 0) return 1;                                      //if there is nowhere to go, return with an error
   //cout << "random number: " << rand() % chooseNext.size() << endl;
-  current = chooseNext[rand() % chooseNext.size()];                             //set current to the index from our random number landing somewhere in our new vector
+  current = graph[current][rand() % graph[current].size()];                     //set current to the index from our random number landing somewhere in our new vector
   //for(int i=0; i<graph[current].size(); i++){
   //  cout << graph[current][i] << " ";
   //}
   //cout << endl;
   return 0;                                                                     //return success
+}
+
+const vector <string> WordGraph::getDictionary(){
+  return dictionary;
+}
+
+vector <int> WordGraph::getLinks(string w){
+  int iw=search(w);                                                             //iw stands for index of word
+
+  if(dictionary[iw].compare(w)!=0){
+    vector<int> ret;
+    ret.push_back(-1);
+    return ret;                                                                  //if iw doesn't match index, w wasn't found
+  }
+
+  return graph[iw];
 }
