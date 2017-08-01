@@ -117,7 +117,7 @@ int WordGraph::importDictionary(string d){
     while(din+dlen<d.size() && d[din+dlen]!=' ' /* && d[din+dlen]!='.' */){
       dlen++;                                                                   //add to length as long as it's not a delim (making sure not to go out of bounds)
     }
-    dictionary.add(d.substr(din,dlen));                                   //add word to dictionary
+    add(d.substr(din,dlen));                                                    //add word to dictionary
     if(d[din+dlen]==' '){
       din += dlen+1;
     }
