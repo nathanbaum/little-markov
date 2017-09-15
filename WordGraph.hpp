@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include <time.h>
 
@@ -16,14 +17,15 @@ public:
   int search(string word);                                                      //returns the index in dictionary corresponding to word, or -1 if search was unsuccessful
   int search(string word, int lo, int hi);                                      //overloaded search function, with lower and upper bound for the dictionary search
   int link(string w1, string w2);                                               //pushes the index of w2 to the end of w1
-  int importGraph(string g);                                                    //imports new graph from string using delimeter colon (:) for rows and semicolon (;) for columns
-                                                                                //example:                        2  4  8
-                                                                                //   "2:4:5;4:0:4;8:4:5"   ->     4  0  4
-                                                                                //                                5  4  5
-  string exportGraph();                                                         //returns string formatted like above
-  int importDictionary(string d);                                               //imports new dictionary from string using delimeter space ( )
-                                                                                //example: "cat dog , fish . mouse"
-  string exportDictionary();                                                    //returns string formatted like above
+  int import(string f);                                                       //imports new WordGraph from string using delimeter comma (,) for elements of each row (see format below)
+                                                                                //example:
+                                                                                //   dHello\n                 Hello goodbye thankyou
+                                                                                //   dgoodbye\n
+                                                                                //   dthankyou\n       ->       0  1  4
+                                                                                //   g0,1,4\n                   4  5  0
+                                                                                //   g4,5,0\n                   5  1  0
+                                                                                //   g5,1,0\n
+  string toString();                                                            //returns string formatted like above
   string getCurrent();                                                          //returns the string at dictionary[current]
   int setCurrent(string s);                                                     //searches dictionary for s, if it finds it sets current to index in dictionary, if not adds it to the dictionary and sets current
   int updateCurrent();                                                          //makes a step based on the probabilities and current -- returns 0 if success or 1 if current is null or there are no other links

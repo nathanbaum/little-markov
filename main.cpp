@@ -1,4 +1,3 @@
-#include <fstream>
 #include "WordGraph.hpp"
 #include <getopt.h>
 
@@ -70,33 +69,26 @@ void printUsage(){
   cout << "Markov";
   cout << "\n";
   cout << "\nUsage:";
-  cout <<   "\n\tMarkov -n <number_of_words_in_chain> -s <string_to_start_at> (-i <path_to_import_file> &| -t <path_to_training_file>) [-e <path_to_export_file> -h]";
+  cout <<   "\n\tMarkov -n <number_of_words_in_chain> -s <string_to_start_at> -t <path_to_training_file>... [-e <path_to_export_file> -h]";
   cout << "\n";
   cout << "\nOptions:";
   cout << "\n\t-n\tSpecifies the number of links in the generated Markov chain.";
   cout << "\n\t-s\tSpecifies the starting string for the chain.";
-  cout << "\n\t-i\tThe path to the import file for the Markov chain.";
+  //cout << "\n\t-i\tThe path to the import file for the Markov chain.";
   cout << "\n\t-t\tThe path to the training file for the Markov chain.";
-  cout << "\n\t\tNote: -i, -t, or both must be specified. If both options are given, the chain will be imported from the file, then trained additionally on the training file.";
+  cout << "\n\t\tNote: At least one training file must be specified. If multiple are given, the chain will be trained from the files in the order they are given.";
   cout << "\n\t-e\tThe path to the export file for this Markov chain.";
   cout << "\n\t-h\tDisplay this usage document." << endl;
 }
 
-void mergeGraphs(WordGraph *g1, WordGraph *g2, WordGraph *og){
-  //now we need to combine the imported graph with the trained graph
-  for(int i=0; i<g1->getDictionary().size(); i++){                              //add all the words from both graphs to the dictionary
-    og->add(g1->getDictionary()[i]);
+void mergeGraphs(WordGraph *g1, WordGraph *g2){
+  for(int i=0; i<g1->getDictionary().size(); i++){                              //add all the words from graph 1 to the dictionary of graph 2
+    g2->add(g1->getDictionary()[i]);
   }
-  for(int i=0; i<g2->getDictionary().size(); i++){
-    og->add(g2->getDictionary()[i]);
-  }
-  for(int i=0; i<og->getDictionary().size(); i++){
-    for(int j=0; j<g1->getLinks(og->getDictionary()[i]).size(); j++){
-      og->link(og->getDictionary()[i], g1->getDictionary()[g1->getLinks(og->getDictionary()[i])[j]]);//link the dictionary word from og to the word from g1's dictionary indexed by the link at j of that word's collumn in g1
-    }
-    for(int j=0; j<g2->getLinks(og->getDictionary()[i]).size(); j++){
-      og->link(og->getDictionary()[i], g2->getDictionary()[g2->getLinks(og->getDictionary()[i])[j]]);
-    }
+  for(int i=0; i<g2->getDictionary().size(); i++){                              //iterate through all the words in g2
+    for(int j=0; j<g1->getLinks(g2->getDictionary()[i]).size(); j++){           //iterate through all the links in g1 for the word indexed by g2->getDictionary[i]
+      g2->link(g2->getDictionary()[i], g1->getDictionary()[g1->getLinks(g2->getDictionary()[i])[j]]);//link the dictionary word from g2 to the word from g1's dictionary indexed by the link at j of that word's collumn in g1
+    }//^^^^^^^^^^^THIS IS THE PROBLEMATIC LINE, IT BREAKS IN THE CASE WHERE g2 HAS WORDS THAT g2 DOES NOT
   }
 }
 
@@ -107,23 +99,21 @@ int main(int argc, char *argv[]){
     return 1;
   }
 
-  WordGraph iGraph;
-  WordGraph tGraph;
+  //WordGraph iGraph;
+  vector <WordGraph> tGraphs;
   WordGraph nGraph;
 
   string STARTING_STRING = "";
   string ENDING_STRING = "";
   int NUM_WORDS = 0;
-  bool IMPORT_FLAG = false;
-  string IMPORT_NAME = "";
+  //vector<string> IMPORT_FILES;
   bool EXPORT_FLAG = false;
   string EXPORT_NAME = "";
-  bool TRAIN_FLAG = false;
-  string TRAIN_FILE = "";
+  vector<string> TRAIN_FILES;
   int c;
   bool errFlag = false;
 
-  while((c = getopt (argc, argv, "i:e:t:s:n:h")) != -1){
+  while((c = getopt (argc, argv, "e:t:s:n:h")) != -1){
     switch (c){
       case 's':
         STARTING_STRING = optarg;
@@ -131,98 +121,50 @@ int main(int argc, char *argv[]){
       case 'n':
         NUM_WORDS = stoi(optarg, nullptr, 10);
         break;
-      case 'i':
-        IMPORT_FLAG = true;
-        IMPORT_NAME = optarg;
-        break;
+      /*case 'i':
+        IMPORT_FILES.push_back(optarg);
+        break;*/
       case 'e':
         EXPORT_FLAG = true;
         EXPORT_NAME = optarg;
         break;
       case 't':
-        TRAIN_FLAG = true;
-        TRAIN_FILE = optarg;
+        TRAIN_FILES.push_back(optarg);
         break;
       case 'h':
         printUsage();
-        break;
+        return 1;
     }
   }
 
-  if(!(IMPORT_FLAG||TRAIN_FLAG)){
+  if(!(/*IMPORT_FILES.size()>0||*/TRAIN_FILES.size()>0)){
     cout << "ERROR: improper usage" << endl;
     printUsage();
     return 1;
   }
 
-  if(IMPORT_FLAG){
-    ifstream importFile;
-    importFile.exceptions(ifstream::failbit);
-    try{
-      importFile.open(IMPORT_NAME, ifstream::in);
-      cout << IMPORT_NAME << " opened successfully: reading..." << endl;
-    }
-    catch(const exception& e){
-      cout << "ERROR: " << IMPORT_NAME << " could not be opened" << endl;
-      if(!TRAIN_FLAG){
-        cout << "FATAL ERROR: no training or import data\nexiting..." << endl;
-        return 1;
+  /*if(IMPORT_FILES.size()>0){
+    for(int i=0; i<IMPORT_FILES.size(); i++){
+      if(iGraph.import(IMPORT_FILES[i]) != 0){
+        cout << "ERROR: file, \"" << IMPORT_FILES[i] << "\" could not be imported" << endl;
       }
-      errFlag = true;
     }
-    if(!errFlag){
-      string line;
-      try{
-        getline(importFile, line);
-      }
-      catch(const exception& e){
-        cout << "ERROR: improperly formatted import file" << endl;
-        errFlag = true;
-      }
-      if(!errFlag){
-        if(iGraph.importDictionary(line)!=0){
-          cout << "ERROR: improperly formatted dictionary" << endl;
-          errFlag = true;
-        }
-        if(!errFlag){
-          try{
-            getline(importFile, line);
-          }
-          catch(const exception& e){
-            cout << "ERROR: improperly formatted import file" << endl;
-            errFlag = true;
-          }
-          if(!errFlag){
-            if(iGraph.importGraph(line)!=0){
-              cout << "ERROR: improperly formatted graph" << endl;
-            }
-          }
-        }
-      }
-      importFile.close();
-    }
-    if(errFlag && !TRAIN_FLAG){
-      cout << "FATAL ERROR: no training or import data\nexiting..." << endl;
-      return 1;
-    }
-  }
+  }*/
 
-  if(TRAIN_FLAG){
+  for(int i=0; i<TRAIN_FILES.size(); i++){
     ifstream trainFile;
     trainFile.exceptions(ifstream::failbit);
     try{
-      trainFile.open(TRAIN_FILE, ifstream::in);
-      cout << TRAIN_FILE << " opened successfully: reading..." << endl;
+      trainFile.open(TRAIN_FILES[i], ifstream::in);
+      cout << TRAIN_FILES[i] << " opened successfully: reading..." << endl;
     }
     catch(const exception& e){
-      cout << "ERROR: " << TRAIN_FILE << " could not be opened" << endl;
-      if(errFlag){
-        cout << "FATAL ERROR: no training or import data\nexiting..." << endl;
-        return 1;
-      }
+      cout << "ERROR: " << TRAIN_FILES[i] << " could not be opened" << endl;
       errFlag = true;
     }
     if(!errFlag){
+      WordGraph temp;
+      tGraphs.push_back(temp);
       string line;
       int lineTotal = 0;
       cout << "counting lines..." << endl;
@@ -236,7 +178,7 @@ int main(int argc, char *argv[]){
         lineTotal++;
       }
       trainFile.close();
-      trainFile.open(TRAIN_FILE, ifstream::in);
+      trainFile.open(TRAIN_FILES[i], ifstream::in);
       cout << "Populating dictionary..." << endl;
       int curLine = 0;
       while(true){
@@ -255,32 +197,41 @@ int main(int argc, char *argv[]){
           cout << " ";
         }
         cout << "]" << int (double (curLine)/double (lineTotal) * 100)<< "%";
-        if(IMPORT_FLAG)addAll(&tGraph, line);
-        else addAll(&tGraph, line);
+        addAll(&tGraphs.back(), line);
       }
       trainFile.close();
       cout << endl;
-      linkAll(&tGraph);
+      linkAll(&tGraphs.back());
     }
+    errFlag = false;
   }
 
-  if(!IMPORT_FLAG && TRAIN_FLAG){
+  if(tGraphs.size()==0){
+    cout << "ERROR: training data could not be opened\nexiting..." << endl;
+    return 1;
+  }
+  while(tGraphs.size()>0){
+    mergeGraphs(&tGraphs.back(), &nGraph);
+    tGraphs.pop_back();
+  }
+
+  /*if(!IMPORT_FILES.size()>0 && TRAIN_FILES.size()>0){
     nGraph = tGraph;
   }
-  else if (IMPORT_FLAG && !TRAIN_FLAG){
+  else if (IMPORT_FILES.size()>0 && !TRAIN_FILES.size()>0){
     nGraph = iGraph;
   }
   else{
     cout << "Merging graphs..." << endl;
     mergeGraphs(&iGraph, &tGraph, &nGraph);
-  }
+  }*/
 
   cout << "\nThis is what I think you sound like:\n" << generateChain(&nGraph, NUM_WORDS, STARTING_STRING, "") << endl;
 
   if(EXPORT_FLAG){
     ofstream exportFile;
 
-    cout << "\nExporting graph to " << EXPORT_NAME << " -- this might take a while..." << endl;
+    cout << "\nExporting graph to " << EXPORT_NAME << endl;
     try{
       exportFile.open (EXPORT_NAME);
     }
@@ -288,10 +239,8 @@ int main(int argc, char *argv[]){
       cout << "ERROR: export failed\nexiting..." << endl;
       return 1;
     }
-    exportFile << nGraph.exportDictionary() << endl;
-    cout << "Dictionary export complete" << endl;
-    exportFile << nGraph.exportGraph();
-    cout << "Graph export complete\nSaving..." << endl;
+    exportFile << nGraph.toString() << endl;
+    cout << "Export complete\nSaving..." << endl;
     exportFile.close();
   }
   //cout << "Exported Dictionary:\n" << myGraph.exportDictionary() << endl;

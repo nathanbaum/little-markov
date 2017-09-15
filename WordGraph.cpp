@@ -66,74 +66,67 @@ int WordGraph::link(string w1, string w2){
   return 0;
 }
 
-int WordGraph::importGraph(string g){                                           //all the ways g can be deformed:
-                                                                                //unequal lengths between semicolons
-                                                                                //number of collumns and rows not equal
-                                                                                //invalid characters
-  if(g[0]==';' || g[0]==':' || g[g.size()-1]==';' || g[g.size()-1]==':') return 1;
-  for(int i=0; i<g.size(); i++){
-    if(g[i]<'0' || g[i]>';') return 2;                                          //invalid tokens
+int WordGraph::import(string f){
+  ifstream importFile;
+  importFile.exceptions(ifstream::failbit);
+  try{
+    importFile.open(f, ifstream::in);
+    cout << f << " opened successfully: reading..." << endl;
   }
-                                                                                //now that we have completed the input data validation, we can move on to the actual algorithm
-  graph.clear();                                                                //clear the old graph to make room for the new one
-  int gin = 0;                                                                  //the current index of our manual traversal
-  int glen = 1;                                                                 //the number of digits in the urrent number in our traversal
-  vector<int> temp;                                                             //temporary vector to build our collumns/rows
-  while(gin<g.size()){
-    while(gin+glen<g.size() && g[gin+glen]<':'){
-      glen++;                                                                   //as long as the next token isn't a delim, keep adding to the length
+  catch(const exception& e){
+    cout << "ERROR: " << f << " could not be opened" << endl;
+    return 1;
+  }
+  string line;
+  int lin = 1;
+  int llen = 1;
+  vector<int> buf;
+  dictionary.clear();
+  graph.clear();
+  while(true){
+    try{
+      getline(importFile, line);
     }
-    temp.push_back(atoi((g.substr(gin, glen)).c_str()));                        //we are turning a string into a substring into a c-string into an int
-    gin += glen+1;                                                              //add the length to the current index plus one to hop onto the first digit of the next number
-    glen = 1;                                                                   //reset the length for the next loop iteration
-    graph.push_back(temp);                                                      //add temp to the graph (it is a new collumn)
-    temp.clear();                                                               //clear out temp for the new loop traversal
-  }
-  return 0;                                                                     //finally we return a success (hopefully)
-}
-
-string WordGraph::exportGraph(){
-  string out = "";                                                              //start with an empty string
-  for(int i=0; i<graph.size(); i++){                                            //traverse collumns
-    for(int j=0; j<graph[i].size(); j++){                                       //traverse rows
-      out += to_string(graph[i][j]);                                            //add number to the output after converting to string
-      if(j+1<graph[i].size()){                                                  //if this isn't the last number in the collumn
-        out += ':';                                                             //add in a colon as delim
+    catch(const exception& e){
+      break;
+    }
+    if(line.size() == 0){}
+    else if(line[0] == 'd'){
+      //cout << line.substr(1,line.size()-1) << endl;
+      dictionary.push_back(line.substr(1,line.size()-1));                       //add word to dictionary
+    }
+    else if(line[0] == 'g'){
+      while(lin < line.size()){
+        while(lin+llen<line.size() && line[lin+llen]!=','){
+          llen++;                                                               //add to length as long as it's not a delim (making sure not to go out of bounds)
+        }
+        //cout << line.substr(lin, llen) << endl;
+        buf.push_back(atoi((line.substr(lin, llen)).c_str()));                  //we are turning a string into a substring into a c-string into an int
+        lin += llen+1;                                                          //add the length to the current index plus one to hop onto the first digit of the next number
+        llen = 1;                                                               //reset the length for the next loop iteration
       }
-    }
-    if(i+1<graph.size()){                                                       //if this isn't the last collumn in the graph
-      out += ';';                                                               //add semicolon as delim
+      graph.push_back(buf);                                                     //add temp to the graph (it is a new collumn)
+      buf.clear();                                                              //clear out temp for the new loop traversal
+      lin = 1;
     }
   }
-  return out;                                                                   //return that whole string
-}
-
-int WordGraph::importDictionary(string d){
-  if(d[0]==' ' || d[d.size()-1]==' ') return 1;                                 //can't have a delim at the start or end
-  dictionary.clear();                                                           //clear out the dictionary so that we don't append
-  int din = 0;                                                                  //same concept as in import graph...
-  int dlen = 1;
-  while(din < d.size()){
-    while(din+dlen<d.size() && d[din+dlen]!=' ' /* && d[din+dlen]!='.' */){
-      dlen++;                                                                   //add to length as long as it's not a delim (making sure not to go out of bounds)
-    }
-    add(d.substr(din,dlen));                                                    //add word to dictionary
-    if(d[din+dlen]==' '){
-      din += dlen+1;
-    }
-    else{
-      din += dlen;
-    }
-    dlen = 1;
-  }
+  importFile.close();
   return 0;
 }
 
-string WordGraph::exportDictionary(){
+string WordGraph::toString(){
   string out = "";                                                              //start with an empty string
   for(int i=0; i<dictionary.size(); i++){                                       //traverse the dictionary
-    out += dictionary[i];                                                       //add current word to output string
-    if(i+1<dictionary.size()) out+=' ';                                         //for all except last word, add space as delim after
+    out += "d" + dictionary[i];                                                 //add current word to output string
+    out+='\n';                                                                  //add new line
+  }
+  for(int i=0; i<dictionary.size(); i++){                                       //traverse the graph
+    out += "g";
+    for(int j=0; j<graph[i].size(); j++){
+      out += to_string(graph[i][j]);
+      if(j+1<graph[i].size()) out+=',';
+    }
+    if(i+1<dictionary.size()) out+='\n';                                        //for all except last word, add space as delim after
   }
   return out;                                                                   //return our output string
 }
