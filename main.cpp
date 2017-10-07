@@ -210,10 +210,10 @@ int main(int argc, char *argv[]){
     cout << "ERROR: training data could not be opened\nexiting..." << endl;
     return 1;
   }
-  while(tGraphs.size()>0){
-    mergeGraphs(&tGraphs.back(), &nGraph);
-    tGraphs.pop_back();
-  }
+  //while(tGraphs.size()>0){
+  //  mergeGraphs(&tGraphs.back(), &nGraph);
+  //  tGraphs.pop_back();
+  //}
 
   /*if(!IMPORT_FILES.size()>0 && TRAIN_FILES.size()>0){
     nGraph = tGraph;
@@ -226,7 +226,7 @@ int main(int argc, char *argv[]){
     mergeGraphs(&iGraph, &tGraph, &nGraph);
   }*/
 
-  cout << "\nThis is what I think you sound like:\n" << generateChain(&nGraph, NUM_WORDS, STARTING_STRING, "") << endl;
+  cout << "\nThis is what I think you sound like:\n" << generateChain(&tGraphs.back(), NUM_WORDS, STARTING_STRING, "") << endl;
 
   if(EXPORT_FLAG){
     ofstream exportFile;
